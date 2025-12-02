@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Librerías para Exportar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
@@ -21,8 +25,6 @@
             color: white;
             border-color: #4F46E5;
         }
-        .category-pill { transition: all 0.2s; }
-        /* Animación suave para la barra de progreso */
         .progress-bar-fill { transition: width 0.5s ease-out; }
     </style>
 </head>
@@ -33,12 +35,10 @@
         <div class="flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold">Gastos Diarios</h1>
-                <p class="text-indigo-200 text-sm">Controla tu presupuesto</p>
+                <p class="text-indigo-200 text-sm">Canaliza tus Chacras</p>
             </div>
             <div class="text-right">
-                <!-- CAMBIO: Etiqueta actualizada -->
                 <p class="text-xs text-indigo-200 uppercase">Disponible Total</p>
-                <!-- CAMBIO: ID actualizado para reflejar el saldo -->
                 <p class="text-2xl font-bold" id="total-balance-header">S/ 0.00</p>
             </div>
         </div>
@@ -46,11 +46,12 @@
 
     <main class="max-w-md mx-auto px-4 space-y-6">
 
-        <!-- 1. Formulario de Nuevo Gasto (MOVIDO AL INICIO) -->
+        <!-- 1. Formulario de Nuevo Gasto -->
         <section class="card p-5 border-l-4 border-indigo-500">
             <h2 class="text-lg font-bold text-gray-800 mb-4">Nuevo Gasto</h2>
             
             <form id="expense-form" class="space-y-4">
+                
                 <!-- Monto -->
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Monto (S/)</label>
@@ -58,6 +59,20 @@
                         <span class="absolute left-3 top-2.5 text-gray-400">S/</span>
                         <input type="number" id="amount" step="0.01" required placeholder="0.00" 
                             class="w-full pl-8 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg font-semibold">
+                    </div>
+                </div>
+
+                <!-- Fecha y Hora -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha</label>
+                        <input type="date" id="date-input" required 
+                            class="w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora</label>
+                        <input type="time" id="time-input" required 
+                            class="w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     </div>
                 </div>
 
@@ -83,15 +98,15 @@
                     <div class="grid grid-cols-3 gap-2 icon-select">
                         <!-- Efectivo -->
                         <div class="relative">
-                            <input type="radio" name="payment" id="pay-cash" value="Efectivo" class="peer hidden" checked onchange="toggleBankSelect()">
+                            <input type="radio" name="payment" id="pay-cash" value="Efectivo" class="peer hidden" checked onchange="togglePaymentOptions()">
                             <label for="pay-cash" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
                                 <i class="fas fa-money-bill-wave mb-1"></i>
                                 <span class="text-xs">Efectivo</span>
                             </label>
                         </div>
-                        <!-- Débito/Yape -->
+                        <!-- Digital -->
                         <div class="relative">
-                            <input type="radio" name="payment" id="pay-debit" value="Débito/Digital" class="peer hidden" onchange="toggleBankSelect()">
+                            <input type="radio" name="payment" id="pay-debit" value="Digital" class="peer hidden" onchange="togglePaymentOptions()">
                             <label for="pay-debit" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
                                 <i class="fas fa-mobile-alt mb-1"></i>
                                 <span class="text-xs">Digital</span>
@@ -99,7 +114,7 @@
                         </div>
                         <!-- Crédito -->
                         <div class="relative">
-                            <input type="radio" name="payment" id="pay-credit" value="Tarjeta de Crédito" class="peer hidden" onchange="toggleBankSelect()">
+                            <input type="radio" name="payment" id="pay-credit" value="Tarjeta de Crédito" class="peer hidden" onchange="togglePaymentOptions()">
                             <label for="pay-credit" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
                                 <i class="fas fa-credit-card mb-1"></i>
                                 <span class="text-xs">Crédito</span>
@@ -108,7 +123,9 @@
                     </div>
                 </div>
 
-                <!-- Selector de Banco (Condicional) -->
+                <!-- Sub-opciones de Pago (Condicionales) -->
+                
+                <!-- Selector Banco (Crédito) -->
                 <div id="bank-container" class="hidden bg-gray-50 p-3 rounded-lg border border-gray-200">
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Selecciona Banco</label>
                     <select id="bank-select" class="w-full p-2 border rounded bg-white">
@@ -120,13 +137,23 @@
                     </select>
                 </div>
 
+                <!-- Selector App (Digital) -->
+                <div id="digital-container" class="hidden bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Billetera Digital</label>
+                    <select id="digital-select" class="w-full p-2 border rounded bg-white">
+                        <option value="">-- Elige App --</option>
+                        <option value="Yape">Yape</option>
+                        <option value="Plin">Plin</option>
+                    </select>
+                </div>
+
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">
                     <i class="fas fa-plus-circle mr-2"></i> Agregar Gasto
                 </button>
             </form>
         </section>
 
-        <!-- 2. Presupuestos y Progreso (SEGUNDO LUGAR) -->
+        <!-- 2. Presupuestos y Progreso -->
         <section class="card p-4">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-gray-700 font-bold">Presupuestos (Topes)</h2>
@@ -139,7 +166,7 @@
             </div>
         </section>
 
-        <!-- 3. Gráfica Dinámica (TERCER LUGAR) -->
+        <!-- 3. Gráfica Dinámica -->
         <section class="card p-4 flex flex-col items-center">
             <h2 class="text-gray-500 text-sm font-semibold mb-2 w-full">RESUMEN POR CATEGORÍA</h2>
             <div class="relative h-64 w-full">
@@ -147,9 +174,19 @@
             </div>
         </section>
 
-        <!-- Historial (AL FINAL) -->
+        <!-- Historial y Exportar -->
         <section class="card p-4 mb-10">
-            <h2 class="text-gray-700 font-bold mb-4">Historial Reciente</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-gray-700 font-bold">Historial</h2>
+                <div class="flex space-x-2">
+                    <button onclick="exportToPDF()" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Descargar PDF">
+                        <i class="fas fa-file-pdf mr-1"></i> PDF
+                    </button>
+                    <button onclick="exportToExcel()" class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded hover:bg-green-200" title="Descargar Excel">
+                        <i class="fas fa-file-excel mr-1"></i> XLS
+                    </button>
+                </div>
+            </div>
             <ul id="transaction-list" class="divide-y divide-gray-100">
                 <!-- Se llena con JS -->
                 <li class="text-center text-gray-400 py-4 text-sm">No hay gastos registrados aún.</li>
@@ -158,10 +195,10 @@
 
     </main>
 
-    <!-- Modal para Editar Presupuesto -->
+    <!-- Modal Editar Presupuesto -->
     <div id="budget-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
         <div class="bg-white rounded-xl p-6 w-11/12 max-w-sm">
-            <h3 class="text-lg font-bold mb-4">Editar Topes (Presupuesto)</h3>
+            <h3 class="text-lg font-bold mb-4">Editar Topes</h3>
             <div id="modal-inputs" class="space-y-3"></div>
             <div class="mt-6 flex justify-end space-x-2">
                 <button onclick="closeModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Cancelar</button>
@@ -173,95 +210,117 @@
     <script>
         // --- Configuración Inicial ---
         const initialCategories = [
-            { id: 'comida', name: 'Comida', color: '#EF4444', budget: 500, icon: 'fa-utensils' }, // Red
-            { id: 'transporte', name: 'Transporte', color: '#F59E0B', budget: 300, icon: 'fa-bus' }, // Amber
-            { id: 'hogar', name: 'Hogar', color: '#10B981', budget: 800, icon: 'fa-home' }, // Emerald
-            { id: 'entretenimiento', name: 'Entretenimiento', color: '#8B5CF6', budget: 200, icon: 'fa-gamepad' }, // Violet
-            { id: 'salud', name: 'Salud', color: '#3B82F6', budget: 150, icon: 'fa-heartbeat' } // Blue
+            { id: 'comida', name: 'Comida', color: '#EF4444', budget: 500, icon: 'fa-utensils' },
+            { id: 'transporte', name: 'Transporte', color: '#F59E0B', budget: 300, icon: 'fa-bus' },
+            { id: 'hogar', name: 'Hogar', color: '#10B981', budget: 800, icon: 'fa-home' },
+            { id: 'entretenimiento', name: 'Entretenimiento', color: '#8B5CF6', budget: 200, icon: 'fa-gamepad' },
+            { id: 'salud', name: 'Salud', color: '#3B82F6', budget: 150, icon: 'fa-heartbeat' }
         ];
 
-        // Estado de la aplicación
         let categories = JSON.parse(localStorage.getItem('gd_categories')) || initialCategories;
         let transactions = JSON.parse(localStorage.getItem('gd_transactions')) || [];
         let myChart = null;
 
-        // --- Funciones de Utilidad ---
-        const formatMoney = (amount) => {
-            return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(amount);
+        // Establecer Fecha/Hora por defecto al cargar
+        const setDateTimeDefaults = () => {
+            const now = new Date();
+            // Formato YYYY-MM-DD para input date
+            document.getElementById('date-input').value = now.toISOString().split('T')[0];
+            // Formato HH:MM para input time
+            document.getElementById('time-input').value = now.toTimeString().substring(0,5);
         };
+        setDateTimeDefaults();
 
+        // --- Utilidades ---
+        const formatMoney = (amount) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(amount);
         const saveToLocal = () => {
             localStorage.setItem('gd_categories', JSON.stringify(categories));
             localStorage.setItem('gd_transactions', JSON.stringify(transactions));
         };
 
-        // --- Lógica UI ---
+        // --- Lógica Visual (UI) ---
 
-        // 1. Inicializar Selectores de Categoría
+        // 1. Selector de Categorías (CORREGIDO: Color de iconos)
         const renderCategorySelectors = () => {
             const container = document.getElementById('category-selector');
             container.innerHTML = categories.map(cat => `
                 <div onclick="selectCategory('${cat.id}')" 
                      class="cat-btn cursor-pointer border rounded-lg p-2 text-center text-xs font-semibold hover:bg-gray-50 transition border-gray-200 text-gray-500"
                      id="btn-${cat.id}" data-color="${cat.color}">
-                    <i class="fas ${cat.icon} mb-1 block text-lg" style="color: ${cat.color}"></i>
+                    <!-- Quitamos el style inline del icono y lo manejamos via JS para el contraste -->
+                    <i class="fas ${cat.icon} cat-icon mb-1 block text-lg" style="color: ${cat.color}"></i>
                     ${cat.name}
                 </div>
             `).join('');
         };
 
-        let selectedCatId = null;
         window.selectCategory = (id) => {
-            selectedCatId = id;
             document.getElementById('selected-category').value = id;
             
-            // Reset styles
+            // Resetear todos los botones
             document.querySelectorAll('.cat-btn').forEach(btn => {
+                const originalColor = btn.getAttribute('data-color');
                 btn.className = "cat-btn cursor-pointer border rounded-lg p-2 text-center text-xs font-semibold hover:bg-gray-50 transition border-gray-200 text-gray-500";
                 btn.style.backgroundColor = "white";
-                btn.style.color = "#6B7280";
                 btn.style.borderColor = "#E5E7EB";
+                btn.style.color = "#6B7280"; // Texto gris
+                
+                // Restaurar color original del icono
+                const icon = btn.querySelector('.cat-icon');
+                if(icon) icon.style.color = originalColor;
             });
 
-            // Set active style
+            // Activar botón seleccionado
             const activeBtn = document.getElementById(`btn-${id}`);
-            const color = activeBtn.getAttribute('data-color');
-            activeBtn.style.backgroundColor = color;
-            activeBtn.style.color = "white";
-            activeBtn.style.borderColor = color;
-            activeBtn.classList.remove('text-gray-500');
+            const activeColor = activeBtn.getAttribute('data-color');
+            
+            activeBtn.style.backgroundColor = activeColor;
+            activeBtn.style.borderColor = activeColor;
+            activeBtn.style.color = "white"; // Texto blanco
+            
+            // Forzar icono blanco para contraste
+            const activeIcon = activeBtn.querySelector('.cat-icon');
+            if(activeIcon) activeIcon.style.color = "white";
         };
 
-        // 2. Lógica Selector de Bancos
-        window.toggleBankSelect = () => {
+        // 2. Lógica Opciones de Pago (Bancos y Digital)
+        window.togglePaymentOptions = () => {
             const creditRadio = document.getElementById('pay-credit');
+            const debitRadio = document.getElementById('pay-debit'); // Digital
+            
             const bankContainer = document.getElementById('bank-container');
+            const digitalContainer = document.getElementById('digital-container');
+            
+            // Lógica Banco
             if (creditRadio.checked) {
                 bankContainer.classList.remove('hidden');
             } else {
                 bankContainer.classList.add('hidden');
-                document.getElementById('bank-select').value = ""; // Reset
+                document.getElementById('bank-select').value = ""; 
+            }
+
+            // Lógica Digital (Yape/Plin)
+            if (debitRadio.checked) {
+                digitalContainer.classList.remove('hidden');
+            } else {
+                digitalContainer.classList.add('hidden');
+                document.getElementById('digital-select').value = "";
             }
         };
 
-        // 3. Renderizar Barras de Presupuesto
+        // 3. Renderizar Presupuestos
         const renderBudgets = () => {
             const list = document.getElementById('budget-list');
-            
-            // Calcular gastos por categoría
             const spendingMap = {};
             categories.forEach(c => spendingMap[c.id] = 0);
             transactions.forEach(t => {
-                if(spendingMap[t.categoryId] !== undefined) {
-                    spendingMap[t.categoryId] += t.amount;
-                }
+                if(spendingMap[t.categoryId] !== undefined) spendingMap[t.categoryId] += t.amount;
             });
 
             list.innerHTML = categories.map(cat => {
                 const spent = spendingMap[cat.id];
                 const remaining = cat.budget - spent;
                 const percent = Math.min((spent / cat.budget) * 100, 100);
-                
                 return `
                 <div class="mb-3">
                     <div class="flex justify-between text-xs mb-1">
@@ -279,7 +338,7 @@
             }).join('');
         };
 
-        // 4. Renderizar Historial
+        // 4. Renderizar Historial (Con Fecha y Hora)
         const renderHistory = () => {
             const list = document.getElementById('transaction-list');
             if (transactions.length === 0) {
@@ -287,15 +346,21 @@
                 return;
             }
 
-            // Ordenar por más reciente
-            const sorted = [...transactions].reverse();
+            // Ordenar por fecha y hora (más reciente primero)
+            const sorted = [...transactions].sort((a, b) => new Date(b.fullDate) - new Date(a.fullDate));
 
             list.innerHTML = sorted.map(t => {
                 const cat = categories.find(c => c.id === t.categoryId) || { color: '#ccc', name: '?' };
+                
+                // Formatear detalles de pago
                 let methodDisplay = t.method;
-                if (t.method === 'Tarjeta de Crédito' && t.bank) {
-                    methodDisplay = `<span class="font-bold text-indigo-600">${t.bank}</span> - Crédito`;
-                }
+                if (t.method === 'Tarjeta de Crédito' && t.bank) methodDisplay = `${t.bank} (Crédito)`;
+                if (t.method === 'Digital' && t.digitalApp) methodDisplay = `${t.digitalApp} (Digital)`;
+
+                // Formatear fecha para mostrar
+                const dateObj = new Date(t.fullDate);
+                const dateStr = dateObj.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' });
+                const timeStr = dateObj.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
                 return `
                 <li class="py-3 flex justify-between items-center group">
@@ -303,9 +368,10 @@
                         <div class="w-2 h-10 rounded-full mr-3" style="background-color: ${cat.color}"></div>
                         <div>
                             <p class="font-bold text-gray-800">${t.description}</p>
-                            <p class="text-xs text-gray-500">
-                                <span class="bg-gray-100 px-1 rounded">${cat.name}</span> • ${methodDisplay}
-                            </p>
+                            <div class="flex flex-col">
+                                <span class="text-xs text-gray-500">${cat.name} • ${methodDisplay}</span>
+                                <span class="text-[10px] text-gray-400 mt-0.5"><i class="far fa-clock"></i> ${dateStr} ${timeStr}</span>
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center">
@@ -319,7 +385,6 @@
             }).join('');
         };
 
-        // 5. Eliminar Transacción
         window.deleteTransaction = (id) => {
             if(confirm('¿Borrar este gasto?')) {
                 transactions = transactions.filter(t => t.id !== id);
@@ -328,56 +393,31 @@
             }
         };
 
-        // 6. Gráfica Chart.js y Actualización de Header
+        // 5. Gráfica y Cabecera
         const updateChart = () => {
             const ctx = document.getElementById('expenseChart').getContext('2d');
-            
-            // Datos agrupados
             const dataMap = categories.map(cat => {
-                return transactions
-                    .filter(t => t.categoryId === cat.id)
-                    .reduce((sum, t) => sum + t.amount, 0);
+                return transactions.filter(t => t.categoryId === cat.id).reduce((sum, t) => sum + t.amount, 0);
             });
 
             const totalSpent = dataMap.reduce((a, b) => a + b, 0);
-            
-            // CAMBIO: Calcular presupuesto total y disponible
             const totalBudget = categories.reduce((sum, cat) => sum + cat.budget, 0);
             const remainingBalance = totalBudget - totalSpent;
 
-            // CAMBIO: Actualizar la cabecera con el saldo disponible
             const headerEl = document.getElementById('total-balance-header');
             headerEl.textContent = formatMoney(remainingBalance);
             
-            // Cambio de color visual en header si está en negativo
             if (remainingBalance < 0) {
-                headerEl.classList.add('text-red-200');
-                headerEl.classList.remove('text-white');
+                headerEl.classList.add('text-red-200'); headerEl.classList.remove('text-white');
             } else {
-                headerEl.classList.remove('text-red-200');
-                headerEl.classList.add('text-white');
+                headerEl.classList.remove('text-red-200'); headerEl.classList.add('text-white');
             }
 
-            if (myChart) {
-                myChart.destroy();
-            }
+            if (myChart) myChart.destroy();
 
-            // Si no hay datos, mostrar gris
-            if (totalSpent === 0) {
-                myChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Sin gastos'],
-                        datasets: [{ data: [1], backgroundColor: ['#E5E7EB'], borderWidth: 0 }]
-                    },
-                    options: { cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-                });
-                return;
-            }
-
-            myChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
+            const chartData = (totalSpent === 0) 
+                ? { labels: ['Sin gastos'], datasets: [{ data: [1], backgroundColor: ['#E5E7EB'], borderWidth: 0 }] }
+                : { 
                     labels: categories.map(c => c.name),
                     datasets: [{
                         data: dataMap,
@@ -386,29 +426,23 @@
                         borderColor: '#ffffff',
                         hoverOffset: 4
                     }]
-                },
+                  };
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: chartData,
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     cutout: '65%',
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } }
-                        }
-                    }
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, tooltip: { enabled: totalSpent > 0 } }
                 }
             });
         };
 
-        // 7. Actualizar toda la UI
-        const updateUI = () => {
-            renderBudgets();
-            renderHistory();
-            updateChart();
-        };
+        const updateUI = () => { renderBudgets(); renderHistory(); updateChart(); };
 
-        // --- Manejo del Formulario ---
+        // --- Agregar Gasto ---
         document.getElementById('expense-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
@@ -416,16 +450,27 @@
             const desc = document.getElementById('description').value;
             const catId = document.getElementById('selected-category').value;
             
-            // Obtener metodo pago
+            // Fecha y Hora
+            const dateVal = document.getElementById('date-input').value; // YYYY-MM-DD
+            const timeVal = document.getElementById('time-input').value; // HH:MM
+            const fullDateIso = `${dateVal}T${timeVal}:00`; // Construir ISO simple
+
+            // Método
             const paymentRadios = document.getElementsByName('payment');
             let method = '';
             for(const r of paymentRadios) { if(r.checked) method = r.value; }
 
+            // Sub-opciones
             const bankSelect = document.getElementById('bank-select');
+            const digitalSelect = document.getElementById('digital-select');
+            
             const bank = (method === 'Tarjeta de Crédito') ? bankSelect.value : null;
+            const digitalApp = (method === 'Digital') ? digitalSelect.value : null;
 
+            // Validaciones
             if (!catId) { alert("Por favor selecciona una categoría"); return; }
-            if (method === 'Tarjeta de Crédito' && !bank) { alert("Por favor selecciona el banco de la tarjeta"); return; }
+            if (method === 'Tarjeta de Crédito' && !bank) { alert("Por favor selecciona el banco"); return; }
+            if (method === 'Digital' && !digitalApp) { alert("Por favor selecciona la billetera (Yape/Plin)"); return; }
 
             const newTx = {
                 id: Date.now(),
@@ -434,54 +479,95 @@
                 categoryId: catId,
                 method: method,
                 bank: bank,
-                date: new Date().toISOString()
+                digitalApp: digitalApp,
+                fullDate: fullDateIso // Guardamos la fecha elegida
             };
 
             transactions.push(newTx);
             saveToLocal();
             
-            // Reset form
+            // Reset
             document.getElementById('expense-form').reset();
-            selectCategory(null); // Clear selection visual
+            setDateTimeDefaults(); // Restaurar fecha/hora actual
+            selectCategory(null);
             document.getElementById('selected-category').value = "";
-            toggleBankSelect(); // Hide bank
+            togglePaymentOptions();
 
             updateUI();
         });
 
-        // --- Manejo del Modal de Edición de Presupuesto ---
+        // --- Exportación ---
+        window.exportToPDF = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.text("Reporte de Gastos Diarios", 14, 20);
+            
+            const tableData = transactions.map(t => {
+                const cat = categories.find(c => c.id === t.categoryId);
+                const dateObj = new Date(t.fullDate);
+                const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                let detalle = t.method;
+                if(t.bank) detalle += ` (${t.bank})`;
+                if(t.digitalApp) detalle += ` (${t.digitalApp})`;
+
+                return [dateStr, t.description, cat.name, detalle, `S/ ${t.amount.toFixed(2)}`];
+            });
+
+            doc.autoTable({
+                head: [['Fecha', 'Descripción', 'Categoría', 'Método', 'Monto']],
+                body: tableData,
+                startY: 30,
+            });
+
+            doc.save(`Gastos_${new Date().toISOString().slice(0,10)}.pdf`);
+        };
+
+        window.exportToExcel = () => {
+            const dataForExcel = transactions.map(t => {
+                 const cat = categories.find(c => c.id === t.categoryId);
+                 const dateObj = new Date(t.fullDate);
+                 
+                 return {
+                     "Fecha": dateObj.toLocaleDateString(),
+                     "Hora": dateObj.toLocaleTimeString(),
+                     "Descripción": t.description,
+                     "Categoría": cat ? cat.name : '?',
+                     "Método": t.method,
+                     "Detalle Pago": t.bank || t.digitalApp || '-',
+                     "Monto": t.amount
+                 };
+            });
+
+            const ws = XLSX.utils.json_to_sheet(dataForExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+            XLSX.writeFile(wb, `Gastos_${new Date().toISOString().slice(0,10)}.xlsx`);
+        };
+
+        // --- Modal ---
         window.toggleEditBudgetMode = () => {
             const modal = document.getElementById('budget-modal');
             const container = document.getElementById('modal-inputs');
-            
             container.innerHTML = categories.map(cat => `
                 <div class="flex items-center justify-between">
                     <label class="text-sm font-medium text-gray-700 w-1/3">${cat.name}</label>
                     <div class="flex items-center w-2/3">
                         <span class="text-gray-400 mr-2 text-sm">S/</span>
-                        <input type="number" id="input-budget-${cat.id}" value="${cat.budget}" 
-                            class="w-full border rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <input type="number" id="input-budget-${cat.id}" value="${cat.budget}" class="w-full border rounded px-2 py-1 text-sm">
                     </div>
                 </div>
             `).join('');
-
             modal.classList.remove('hidden');
         };
-
-        window.closeModal = () => {
-            document.getElementById('budget-modal').classList.add('hidden');
-        };
-
+        window.closeModal = () => document.getElementById('budget-modal').classList.add('hidden');
         window.saveBudgets = () => {
             categories.forEach(cat => {
                 const input = document.getElementById(`input-budget-${cat.id}`);
-                if (input) {
-                    cat.budget = parseFloat(input.value) || 0;
-                }
+                if (input) cat.budget = parseFloat(input.value) || 0;
             });
-            saveToLocal();
-            updateUI();
-            closeModal();
+            saveToLocal(); updateUI(); closeModal();
         };
 
         // --- Inicio ---
