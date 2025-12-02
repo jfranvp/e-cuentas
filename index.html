@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gastos Diarios S/</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .icon-select input:checked + label {
+            background-color: #4F46E5;
+            color: white;
+            border-color: #4F46E5;
+        }
+        .category-pill { transition: all 0.2s; }
+        /* Animación suave para la barra de progreso */
+        .progress-bar-fill { transition: width 0.5s ease-out; }
+    </style>
+</head>
+<body class="pb-20">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-6 rounded-b-3xl shadow-lg mb-6 sticky top-0 z-10">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">Gastos Diarios</h1>
+                <p class="text-indigo-200 text-sm">Controla tu presupuesto</p>
+            </div>
+            <div class="text-right">
+                <!-- CAMBIO: Etiqueta actualizada -->
+                <p class="text-xs text-indigo-200 uppercase">Disponible Total</p>
+                <!-- CAMBIO: ID actualizado para reflejar el saldo -->
+                <p class="text-2xl font-bold" id="total-balance-header">S/ 0.00</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-4 space-y-6">
+
+        <!-- 1. Formulario de Nuevo Gasto (MOVIDO AL INICIO) -->
+        <section class="card p-5 border-l-4 border-indigo-500">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Nuevo Gasto</h2>
+            
+            <form id="expense-form" class="space-y-4">
+                <!-- Monto -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Monto (S/)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-gray-400">S/</span>
+                        <input type="number" id="amount" step="0.01" required placeholder="0.00" 
+                            class="w-full pl-8 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg font-semibold">
+                    </div>
+                </div>
+
+                <!-- Descripción -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>
+                    <input type="text" id="description" required placeholder="Ej. Almuerzo, Taxi..." 
+                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <!-- Categoría -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label>
+                    <div class="grid grid-cols-2 gap-2" id="category-selector">
+                        <!-- JS genera botones -->
+                    </div>
+                    <input type="hidden" id="selected-category" required>
+                </div>
+
+                <!-- Método de Pago -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Método de Pago</label>
+                    <div class="grid grid-cols-3 gap-2 icon-select">
+                        <!-- Efectivo -->
+                        <div class="relative">
+                            <input type="radio" name="payment" id="pay-cash" value="Efectivo" class="peer hidden" checked onchange="toggleBankSelect()">
+                            <label for="pay-cash" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
+                                <i class="fas fa-money-bill-wave mb-1"></i>
+                                <span class="text-xs">Efectivo</span>
+                            </label>
+                        </div>
+                        <!-- Débito/Yape -->
+                        <div class="relative">
+                            <input type="radio" name="payment" id="pay-debit" value="Débito/Digital" class="peer hidden" onchange="toggleBankSelect()">
+                            <label for="pay-debit" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
+                                <i class="fas fa-mobile-alt mb-1"></i>
+                                <span class="text-xs">Digital</span>
+                            </label>
+                        </div>
+                        <!-- Crédito -->
+                        <div class="relative">
+                            <input type="radio" name="payment" id="pay-credit" value="Tarjeta de Crédito" class="peer hidden" onchange="toggleBankSelect()">
+                            <label for="pay-credit" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
+                                <i class="fas fa-credit-card mb-1"></i>
+                                <span class="text-xs">Crédito</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selector de Banco (Condicional) -->
+                <div id="bank-container" class="hidden bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Selecciona Banco</label>
+                    <select id="bank-select" class="w-full p-2 border rounded bg-white">
+                        <option value="">-- Elige Banco --</option>
+                        <option value="HO">HO</option>
+                        <option value="BBVA">BBVA</option>
+                        <option value="CENCOSUD">CENCOSUD</option>
+                        <option value="INTERBANK">INTERBANK</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">
+                    <i class="fas fa-plus-circle mr-2"></i> Agregar Gasto
+                </button>
+            </form>
+        </section>
+
+        <!-- 2. Presupuestos y Progreso (SEGUNDO LUGAR) -->
+        <section class="card p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-gray-700 font-bold">Presupuestos (Topes)</h2>
+                <button onclick="toggleEditBudgetMode()" class="text-sm text-indigo-600 font-semibold hover:underline">
+                    <i class="fas fa-edit"></i> Editar Topes
+                </button>
+            </div>
+            <div id="budget-list" class="space-y-4">
+                <!-- Se llena con JS -->
+            </div>
+        </section>
+
+        <!-- 3. Gráfica Dinámica (TERCER LUGAR) -->
+        <section class="card p-4 flex flex-col items-center">
+            <h2 class="text-gray-500 text-sm font-semibold mb-2 w-full">RESUMEN POR CATEGORÍA</h2>
+            <div class="relative h-64 w-full">
+                <canvas id="expenseChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Historial (AL FINAL) -->
+        <section class="card p-4 mb-10">
+            <h2 class="text-gray-700 font-bold mb-4">Historial Reciente</h2>
+            <ul id="transaction-list" class="divide-y divide-gray-100">
+                <!-- Se llena con JS -->
+                <li class="text-center text-gray-400 py-4 text-sm">No hay gastos registrados aún.</li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Modal para Editar Presupuesto -->
+    <div id="budget-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-11/12 max-w-sm">
+            <h3 class="text-lg font-bold mb-4">Editar Topes (Presupuesto)</h3>
+            <div id="modal-inputs" class="space-y-3"></div>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="closeModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Cancelar</button>
+                <button onclick="saveBudgets()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuración Inicial ---
+        const initialCategories = [
+            { id: 'comida', name: 'Comida', color: '#EF4444', budget: 500, icon: 'fa-utensils' }, // Red
+            { id: 'transporte', name: 'Transporte', color: '#F59E0B', budget: 300, icon: 'fa-bus' }, // Amber
+            { id: 'hogar', name: 'Hogar', color: '#10B981', budget: 800, icon: 'fa-home' }, // Emerald
+            { id: 'entretenimiento', name: 'Entretenimiento', color: '#8B5CF6', budget: 200, icon: 'fa-gamepad' }, // Violet
+            { id: 'salud', name: 'Salud', color: '#3B82F6', budget: 150, icon: 'fa-heartbeat' } // Blue
+        ];
+
+        // Estado de la aplicación
+        let categories = JSON.parse(localStorage.getItem('gd_categories')) || initialCategories;
+        let transactions = JSON.parse(localStorage.getItem('gd_transactions')) || [];
+        let myChart = null;
+
+        // --- Funciones de Utilidad ---
+        const formatMoney = (amount) => {
+            return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(amount);
+        };
+
+        const saveToLocal = () => {
+            localStorage.setItem('gd_categories', JSON.stringify(categories));
+            localStorage.setItem('gd_transactions', JSON.stringify(transactions));
+        };
+
+        // --- Lógica UI ---
+
+        // 1. Inicializar Selectores de Categoría
+        const renderCategorySelectors = () => {
+            const container = document.getElementById('category-selector');
+            container.innerHTML = categories.map(cat => `
+                <div onclick="selectCategory('${cat.id}')" 
+                     class="cat-btn cursor-pointer border rounded-lg p-2 text-center text-xs font-semibold hover:bg-gray-50 transition border-gray-200 text-gray-500"
+                     id="btn-${cat.id}" data-color="${cat.color}">
+                    <i class="fas ${cat.icon} mb-1 block text-lg" style="color: ${cat.color}"></i>
+                    ${cat.name}
+                </div>
+            `).join('');
+        };
+
+        let selectedCatId = null;
+        window.selectCategory = (id) => {
+            selectedCatId = id;
+            document.getElementById('selected-category').value = id;
+            
+            // Reset styles
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = "cat-btn cursor-pointer border rounded-lg p-2 text-center text-xs font-semibold hover:bg-gray-50 transition border-gray-200 text-gray-500";
+                btn.style.backgroundColor = "white";
+                btn.style.color = "#6B7280";
+                btn.style.borderColor = "#E5E7EB";
+            });
+
+            // Set active style
+            const activeBtn = document.getElementById(`btn-${id}`);
+            const color = activeBtn.getAttribute('data-color');
+            activeBtn.style.backgroundColor = color;
+            activeBtn.style.color = "white";
+            activeBtn.style.borderColor = color;
+            activeBtn.classList.remove('text-gray-500');
+        };
+
+        // 2. Lógica Selector de Bancos
+        window.toggleBankSelect = () => {
+            const creditRadio = document.getElementById('pay-credit');
+            const bankContainer = document.getElementById('bank-container');
+            if (creditRadio.checked) {
+                bankContainer.classList.remove('hidden');
+            } else {
+                bankContainer.classList.add('hidden');
+                document.getElementById('bank-select').value = ""; // Reset
+            }
+        };
+
+        // 3. Renderizar Barras de Presupuesto
+        const renderBudgets = () => {
+            const list = document.getElementById('budget-list');
+            
+            // Calcular gastos por categoría
+            const spendingMap = {};
+            categories.forEach(c => spendingMap[c.id] = 0);
+            transactions.forEach(t => {
+                if(spendingMap[t.categoryId] !== undefined) {
+                    spendingMap[t.categoryId] += t.amount;
+                }
+            });
+
+            list.innerHTML = categories.map(cat => {
+                const spent = spendingMap[cat.id];
+                const remaining = cat.budget - spent;
+                const percent = Math.min((spent / cat.budget) * 100, 100);
+                
+                return `
+                <div class="mb-3">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="font-semibold text-gray-700">${cat.name}</span>
+                        <span class="text-gray-500">${formatMoney(spent)} / ${formatMoney(cat.budget)}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                        <div class="progress-bar-fill h-2.5 rounded-full" style="width: ${percent}%; background-color: ${cat.color}"></div>
+                    </div>
+                    <div class="text-right text-[10px] mt-1 ${remaining < 0 ? 'text-red-500 font-bold' : 'text-gray-400'}">
+                        ${remaining < 0 ? `Excedido por ${formatMoney(Math.abs(remaining))}` : `Quedan: ${formatMoney(remaining)}`}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        };
+
+        // 4. Renderizar Historial
+        const renderHistory = () => {
+            const list = document.getElementById('transaction-list');
+            if (transactions.length === 0) {
+                list.innerHTML = '<li class="text-center text-gray-400 py-4 text-sm">No hay gastos registrados aún.</li>';
+                return;
+            }
+
+            // Ordenar por más reciente
+            const sorted = [...transactions].reverse();
+
+            list.innerHTML = sorted.map(t => {
+                const cat = categories.find(c => c.id === t.categoryId) || { color: '#ccc', name: '?' };
+                let methodDisplay = t.method;
+                if (t.method === 'Tarjeta de Crédito' && t.bank) {
+                    methodDisplay = `<span class="font-bold text-indigo-600">${t.bank}</span> - Crédito`;
+                }
+
+                return `
+                <li class="py-3 flex justify-between items-center group">
+                    <div class="flex items-center">
+                        <div class="w-2 h-10 rounded-full mr-3" style="background-color: ${cat.color}"></div>
+                        <div>
+                            <p class="font-bold text-gray-800">${t.description}</p>
+                            <p class="text-xs text-gray-500">
+                                <span class="bg-gray-100 px-1 rounded">${cat.name}</span> • ${methodDisplay}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                         <span class="font-bold text-gray-700 mr-3">${formatMoney(t.amount)}</span>
+                         <button onclick="deleteTransaction(${t.id})" class="text-red-300 hover:text-red-500 text-xs p-2">
+                            <i class="fas fa-trash"></i>
+                         </button>
+                    </div>
+                </li>
+                `;
+            }).join('');
+        };
+
+        // 5. Eliminar Transacción
+        window.deleteTransaction = (id) => {
+            if(confirm('¿Borrar este gasto?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveToLocal();
+                updateUI();
+            }
+        };
+
+        // 6. Gráfica Chart.js y Actualización de Header
+        const updateChart = () => {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            
+            // Datos agrupados
+            const dataMap = categories.map(cat => {
+                return transactions
+                    .filter(t => t.categoryId === cat.id)
+                    .reduce((sum, t) => sum + t.amount, 0);
+            });
+
+            const totalSpent = dataMap.reduce((a, b) => a + b, 0);
+            
+            // CAMBIO: Calcular presupuesto total y disponible
+            const totalBudget = categories.reduce((sum, cat) => sum + cat.budget, 0);
+            const remainingBalance = totalBudget - totalSpent;
+
+            // CAMBIO: Actualizar la cabecera con el saldo disponible
+            const headerEl = document.getElementById('total-balance-header');
+            headerEl.textContent = formatMoney(remainingBalance);
+            
+            // Cambio de color visual en header si está en negativo
+            if (remainingBalance < 0) {
+                headerEl.classList.add('text-red-200');
+                headerEl.classList.remove('text-white');
+            } else {
+                headerEl.classList.remove('text-red-200');
+                headerEl.classList.add('text-white');
+            }
+
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            // Si no hay datos, mostrar gris
+            if (totalSpent === 0) {
+                myChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Sin gastos'],
+                        datasets: [{ data: [1], backgroundColor: ['#E5E7EB'], borderWidth: 0 }]
+                    },
+                    options: { cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+                });
+                return;
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: categories.map(c => c.name),
+                    datasets: [{
+                        data: dataMap,
+                        backgroundColor: categories.map(c => c.color),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        };
+
+        // 7. Actualizar toda la UI
+        const updateUI = () => {
+            renderBudgets();
+            renderHistory();
+            updateChart();
+        };
+
+        // --- Manejo del Formulario ---
+        document.getElementById('expense-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const amount = parseFloat(document.getElementById('amount').value);
+            const desc = document.getElementById('description').value;
+            const catId = document.getElementById('selected-category').value;
+            
+            // Obtener metodo pago
+            const paymentRadios = document.getElementsByName('payment');
+            let method = '';
+            for(const r of paymentRadios) { if(r.checked) method = r.value; }
+
+            const bankSelect = document.getElementById('bank-select');
+            const bank = (method === 'Tarjeta de Crédito') ? bankSelect.value : null;
+
+            if (!catId) { alert("Por favor selecciona una categoría"); return; }
+            if (method === 'Tarjeta de Crédito' && !bank) { alert("Por favor selecciona el banco de la tarjeta"); return; }
+
+            const newTx = {
+                id: Date.now(),
+                amount: amount,
+                description: desc,
+                categoryId: catId,
+                method: method,
+                bank: bank,
+                date: new Date().toISOString()
+            };
+
+            transactions.push(newTx);
+            saveToLocal();
+            
+            // Reset form
+            document.getElementById('expense-form').reset();
+            selectCategory(null); // Clear selection visual
+            document.getElementById('selected-category').value = "";
+            toggleBankSelect(); // Hide bank
+
+            updateUI();
+        });
+
+        // --- Manejo del Modal de Edición de Presupuesto ---
+        window.toggleEditBudgetMode = () => {
+            const modal = document.getElementById('budget-modal');
+            const container = document.getElementById('modal-inputs');
+            
+            container.innerHTML = categories.map(cat => `
+                <div class="flex items-center justify-between">
+                    <label class="text-sm font-medium text-gray-700 w-1/3">${cat.name}</label>
+                    <div class="flex items-center w-2/3">
+                        <span class="text-gray-400 mr-2 text-sm">S/</span>
+                        <input type="number" id="input-budget-${cat.id}" value="${cat.budget}" 
+                            class="w-full border rounded px-2 py-1 text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                </div>
+            `).join('');
+
+            modal.classList.remove('hidden');
+        };
+
+        window.closeModal = () => {
+            document.getElementById('budget-modal').classList.add('hidden');
+        };
+
+        window.saveBudgets = () => {
+            categories.forEach(cat => {
+                const input = document.getElementById(`input-budget-${cat.id}`);
+                if (input) {
+                    cat.budget = parseFloat(input.value) || 0;
+                }
+            });
+            saveToLocal();
+            updateUI();
+            closeModal();
+        };
+
+        // --- Inicio ---
+        renderCategorySelectors();
+        updateUI();
+
+    </script>
+</body>
+</html>
