@@ -18,27 +18,48 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .card { background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .icon-select input:checked + label {
-            background-color: #4F46E5;
-            color: white;
-            border-color: #4F46E5;
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        /* Animaciones suaves */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025); 
+            animation: fadeIn 0.5s ease-out forwards;
         }
-        .progress-bar-fill { transition: width 0.5s ease-out; }
+        .icon-select input:checked + label {
+            background-color: #6366f1; /* Indigo 500 */
+            color: white;
+            border-color: #6366f1;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+        }
+        .progress-bar-fill { transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        /* Estilos personalizados para inputs */
+        .custom-input {
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+        .custom-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.2);
+        }
     </style>
 </head>
-<body class="pb-20">
+<body class="pb-24">
 
-    <!-- Header -->
-    <header class="bg-indigo-600 text-white p-6 rounded-b-3xl shadow-lg mb-6 sticky top-0 z-10">
+    <!-- Header con Gradiente -->
+    <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 rounded-b-[2rem] shadow-xl mb-8 sticky top-0 z-20">
         <div class="flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold">Gastos Diarios</h1>
-                <p class="text-indigo-200 text-sm">Canaliza tus Chacras</p>
+                <h1 class="text-2xl font-bold tracking-tight">Gastos Diarios</h1>
+                <!-- Cambio solicitado: Texto místico -->
+                <p class="text-indigo-100 text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-spa text-xs"></i> Canaliza tus chacras
+                </p>
             </div>
-            <div class="text-right">
-                <p class="text-xs text-indigo-200 uppercase">Disponible Total</p>
+            <div class="text-right bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+                <p class="text-[10px] text-indigo-100 uppercase tracking-wider font-semibold">Disponible Total</p>
                 <p class="text-2xl font-bold" id="total-balance-header">S/ 0.00</p>
             </div>
         </div>
@@ -47,46 +68,55 @@
     <main class="max-w-md mx-auto px-4 space-y-6">
 
         <!-- 1. Formulario de Nuevo Gasto -->
-        <section class="card p-5 border-l-4 border-indigo-500">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">Nuevo Gasto</h2>
+        <section class="card p-6 border-t-4 border-indigo-500">
+            <h2 class="text-lg font-bold text-gray-800 mb-5 flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="bg-indigo-100 text-indigo-600 p-2 rounded-lg mr-3 text-sm"><i class="fas fa-plus"></i></span>
+                    <span id="form-title">Nuevo Gasto</span>
+                </div>
+                <!-- Botón Cancelar Edición (Oculto por defecto) -->
+                <button id="cancel-edit-btn" onclick="cancelEdit()" class="hidden text-xs text-gray-500 hover:text-red-500 font-semibold underline">
+                    Cancelar Edición
+                </button>
+            </h2>
             
-            <form id="expense-form" class="space-y-4">
+            <form id="expense-form" class="space-y-5">
                 
                 <!-- Monto -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Monto (S/)</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Monto (S/)</label>
                     <div class="relative">
-                        <span class="absolute left-3 top-2.5 text-gray-400">S/</span>
+                        <span class="absolute left-4 top-3 text-gray-400 font-semibold">S/</span>
                         <input type="number" id="amount" step="0.01" required placeholder="0.00" 
-                            class="w-full pl-8 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-lg font-semibold">
+                            class="custom-input w-full pl-10 pr-4 py-3 rounded-xl text-xl font-bold text-gray-700 placeholder-gray-300">
                     </div>
                 </div>
 
                 <!-- Fecha y Hora -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Fecha</label>
                         <input type="date" id="date-input" required 
-                            class="w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="custom-input w-full px-3 py-2 rounded-xl text-sm text-gray-600">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Hora</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Hora</label>
                         <input type="time" id="time-input" required 
-                            class="w-full px-2 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            class="custom-input w-full px-3 py-2 rounded-xl text-sm text-gray-600">
                     </div>
                 </div>
 
                 <!-- Descripción -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Descripción</label>
                     <input type="text" id="description" required placeholder="Ej. Almuerzo, Taxi..." 
-                        class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        class="custom-input w-full px-4 py-3 rounded-xl text-gray-700">
                 </div>
 
                 <!-- Categoría -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label>
-                    <div class="grid grid-cols-2 gap-2" id="category-selector">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Categoría</label>
+                    <div class="grid grid-cols-2 gap-3" id="category-selector">
                         <!-- JS genera botones -->
                     </div>
                     <input type="hidden" id="selected-category" required>
@@ -94,41 +124,39 @@
 
                 <!-- Método de Pago -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Método de Pago</label>
-                    <div class="grid grid-cols-3 gap-2 icon-select">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1 tracking-wide">Método de Pago</label>
+                    <div class="grid grid-cols-3 gap-3 icon-select">
                         <!-- Efectivo -->
                         <div class="relative">
                             <input type="radio" name="payment" id="pay-cash" value="Efectivo" class="peer hidden" checked onchange="togglePaymentOptions()">
-                            <label for="pay-cash" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
-                                <i class="fas fa-money-bill-wave mb-1"></i>
-                                <span class="text-xs">Efectivo</span>
+                            <label for="pay-cash" class="flex flex-col items-center justify-center p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 text-gray-500 h-full transition-all duration-200">
+                                <i class="fas fa-money-bill-wave mb-1 text-lg"></i>
+                                <span class="text-[10px] font-semibold uppercase">Efectivo</span>
                             </label>
                         </div>
                         <!-- Digital -->
                         <div class="relative">
                             <input type="radio" name="payment" id="pay-debit" value="Digital" class="peer hidden" onchange="togglePaymentOptions()">
-                            <label for="pay-debit" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
-                                <i class="fas fa-mobile-alt mb-1"></i>
-                                <span class="text-xs">Digital</span>
+                            <label for="pay-debit" class="flex flex-col items-center justify-center p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 text-gray-500 h-full transition-all duration-200">
+                                <i class="fas fa-mobile-alt mb-1 text-lg"></i>
+                                <span class="text-[10px] font-semibold uppercase">Digital</span>
                             </label>
                         </div>
                         <!-- Crédito -->
                         <div class="relative">
                             <input type="radio" name="payment" id="pay-credit" value="Tarjeta de Crédito" class="peer hidden" onchange="togglePaymentOptions()">
-                            <label for="pay-credit" class="flex flex-col items-center justify-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50 text-gray-600 h-full">
-                                <i class="fas fa-credit-card mb-1"></i>
-                                <span class="text-xs">Crédito</span>
+                            <label for="pay-credit" class="flex flex-col items-center justify-center p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 text-gray-500 h-full transition-all duration-200">
+                                <i class="fas fa-credit-card mb-1 text-lg"></i>
+                                <span class="text-[10px] font-semibold uppercase">Crédito</span>
                             </label>
                         </div>
                     </div>
                 </div>
 
                 <!-- Sub-opciones de Pago (Condicionales) -->
-                
-                <!-- Selector Banco (Crédito) -->
-                <div id="bank-container" class="hidden bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Selecciona Banco</label>
-                    <select id="bank-select" class="w-full p-2 border rounded bg-white">
+                <div id="bank-container" class="hidden bg-indigo-50 p-4 rounded-xl border border-indigo-100 animate-fadeIn">
+                    <label class="block text-xs font-bold text-indigo-500 uppercase mb-1">Selecciona Banco</label>
+                    <select id="bank-select" class="w-full p-2 border border-indigo-200 rounded-lg bg-white text-indigo-700 focus:outline-none">
                         <option value="">-- Elige Banco --</option>
                         <option value="HO">HO</option>
                         <option value="BBVA">BBVA</option>
@@ -137,100 +165,172 @@
                     </select>
                 </div>
 
-                <!-- Selector App (Digital) -->
-                <div id="digital-container" class="hidden bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Billetera Digital</label>
-                    <select id="digital-select" class="w-full p-2 border rounded bg-white">
+                <div id="digital-container" class="hidden bg-indigo-50 p-4 rounded-xl border border-indigo-100 animate-fadeIn">
+                    <label class="block text-xs font-bold text-indigo-500 uppercase mb-1">Billetera Digital</label>
+                    <select id="digital-select" class="w-full p-2 border border-indigo-200 rounded-lg bg-white text-indigo-700 focus:outline-none">
                         <option value="">-- Elige App --</option>
                         <option value="Yape">Yape</option>
                         <option value="Plin">Plin</option>
                     </select>
                 </div>
 
-                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition transform active:scale-95">
-                    <i class="fas fa-plus-circle mr-2"></i> Agregar Gasto
+                <button type="submit" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition transform active:scale-95 flex justify-center items-center gap-2">
+                    <i class="fas fa-plus-circle" id="submit-icon"></i> <span id="submit-text">Agregar Gasto</span>
                 </button>
             </form>
         </section>
 
         <!-- 2. Presupuestos y Progreso -->
-        <section class="card p-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-gray-700 font-bold">Presupuestos (Topes)</h2>
-                <button onclick="toggleEditBudgetMode()" class="text-sm text-indigo-600 font-semibold hover:underline">
-                    <i class="fas fa-edit"></i> Editar Topes
+        <section class="card p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-gray-800 font-bold flex items-center">
+                    <span class="bg-purple-100 text-purple-600 p-2 rounded-lg mr-3 text-sm"><i class="fas fa-wallet"></i></span>
+                    Presupuestos
+                </h2>
+                <button onclick="toggleEditBudgetMode()" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-full transition-colors">
+                    <i class="fas fa-pen mr-1"></i> Editar Topes
                 </button>
             </div>
-            <div id="budget-list" class="space-y-4">
+            <div id="budget-list" class="space-y-5">
                 <!-- Se llena con JS -->
             </div>
         </section>
 
         <!-- 3. Gráfica Dinámica -->
-        <section class="card p-4 flex flex-col items-center">
-            <h2 class="text-gray-500 text-sm font-semibold mb-2 w-full">RESUMEN POR CATEGORÍA</h2>
+        <section class="card p-6 flex flex-col items-center">
+            <h2 class="text-gray-500 text-xs font-bold tracking-widest mb-4 w-full text-center">RESUMEN VISUAL</h2>
             <div class="relative h-64 w-full">
                 <canvas id="expenseChart"></canvas>
             </div>
         </section>
 
         <!-- Historial y Exportar -->
-        <section class="card p-4 mb-10">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-gray-700 font-bold">Historial</h2>
-                <div class="flex space-x-2">
-                    <button onclick="exportToPDF()" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200" title="Descargar PDF">
-                        <i class="fas fa-file-pdf mr-1"></i> PDF
-                    </button>
-                    <button onclick="exportToExcel()" class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded hover:bg-green-200" title="Descargar Excel">
-                        <i class="fas fa-file-excel mr-1"></i> XLS
-                    </button>
+        <section class="card p-6 mb-10">
+            <div class="flex flex-col space-y-4 mb-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-gray-800 font-bold flex items-center">
+                        <span class="bg-green-100 text-green-600 p-2 rounded-lg mr-3 text-sm"><i class="fas fa-history"></i></span>
+                        Historial
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button onclick="exportToPDF()" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 font-medium transition" title="Descargar PDF">
+                            <i class="fas fa-file-pdf mr-1"></i> PDF
+                        </button>
+                        <button onclick="exportToExcel()" class="text-xs bg-green-50 text-green-600 px-3 py-1.5 rounded-lg hover:bg-green-100 font-medium transition" title="Descargar Excel">
+                            <i class="fas fa-file-excel mr-1"></i> XLS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros de Fecha -->
+                <div class="flex space-x-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <div class="w-1/2">
+                        <label class="block text-[10px] text-gray-400 font-bold uppercase mb-1 pl-1">Mes</label>
+                        <select id="filter-month" onchange="updateUI()" class="w-full text-sm bg-white border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:border-indigo-400 text-gray-700">
+                            <option value="0">Enero</option>
+                            <option value="1">Febrero</option>
+                            <option value="2">Marzo</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Mayo</option>
+                            <option value="5">Junio</option>
+                            <option value="6">Julio</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Septiembre</option>
+                            <option value="9">Octubre</option>
+                            <option value="10">Noviembre</option>
+                            <option value="11">Diciembre</option>
+                            <option value="all">Todos</option>
+                        </select>
+                    </div>
+                    <div class="w-1/2">
+                        <label class="block text-[10px] text-gray-400 font-bold uppercase mb-1 pl-1">Año</label>
+                        <select id="filter-year" onchange="updateUI()" class="w-full text-sm bg-white border border-gray-200 rounded-md px-2 py-1.5 focus:outline-none focus:border-indigo-400 text-gray-700">
+                            <!-- Se llena con JS -->
+                        </select>
+                    </div>
                 </div>
             </div>
+
             <ul id="transaction-list" class="divide-y divide-gray-100">
                 <!-- Se llena con JS -->
-                <li class="text-center text-gray-400 py-4 text-sm">No hay gastos registrados aún.</li>
+                <li class="text-center text-gray-400 py-6 text-sm italic">No hay movimientos en este periodo.</li>
             </ul>
         </section>
 
     </main>
 
     <!-- Modal Editar Presupuesto -->
-    <div id="budget-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl p-6 w-11/12 max-w-sm">
-            <h3 class="text-lg font-bold mb-4">Editar Topes</h3>
-            <div id="modal-inputs" class="space-y-3"></div>
-            <div class="mt-6 flex justify-end space-x-2">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded">Cancelar</button>
-                <button onclick="saveBudgets()" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">Guardar</button>
+    <div id="budget-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm shadow-2xl transform scale-100 transition-transform">
+            <h3 class="text-lg font-bold mb-4 text-gray-800">Ajustar Topes</h3>
+            <div id="modal-inputs" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button onclick="closeModal()" class="px-5 py-2.5 text-gray-500 hover:bg-gray-100 rounded-xl font-medium transition">Cancelar</button>
+                <button onclick="saveBudgets()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-lg shadow-indigo-200 transition">Guardar</button>
             </div>
         </div>
     </div>
 
     <script>
         // --- Configuración Inicial ---
+        // IMPORTANTE: PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT
+        const GOOGLE_SHEET_URL = ''; 
+
         const initialCategories = [
             { id: 'comida', name: 'Comida', color: '#EF4444', budget: 500, icon: 'fa-utensils' },
             { id: 'transporte', name: 'Transporte', color: '#F59E0B', budget: 300, icon: 'fa-bus' },
             { id: 'hogar', name: 'Hogar', color: '#10B981', budget: 800, icon: 'fa-home' },
             { id: 'entretenimiento', name: 'Entretenimiento', color: '#8B5CF6', budget: 200, icon: 'fa-gamepad' },
-            { id: 'salud', name: 'Salud', color: '#3B82F6', budget: 150, icon: 'fa-heartbeat' }
+            { id: 'salud', name: 'Salud', color: '#3B82F6', budget: 150, icon: 'fa-heartbeat' },
+            { id: 'pan', name: 'Pan', color: '#EC4899', budget: 100, icon: 'fa-bread-slice' } // Nueva Categoría Agregada
         ];
 
         let categories = JSON.parse(localStorage.getItem('gd_categories')) || initialCategories;
+
+        // Lógica de Migración: Agregar "Pan" si no existe en los datos guardados del usuario
+        if (!categories.find(c => c.id === 'pan')) {
+            const panCategory = initialCategories.find(c => c.id === 'pan');
+            categories.push(panCategory);
+            localStorage.setItem('gd_categories', JSON.stringify(categories));
+        }
+
         let transactions = JSON.parse(localStorage.getItem('gd_transactions')) || [];
         let myChart = null;
+        
+        // Estado de Edición
+        let editingTransactionId = null;
+
+        // --- Configuración de Filtros ---
+        const initFilters = () => {
+            const now = new Date();
+            // Seleccionar mes actual si no hay valor previo
+            const monthSelect = document.getElementById('filter-month');
+            if(monthSelect.value === "0" && !monthSelect.dataset.initialized) {
+                 monthSelect.value = now.getMonth();
+                 monthSelect.dataset.initialized = "true";
+            }
+            
+            // Poblar años (Año actual - 2 hasta Año actual + 1)
+            const yearSelect = document.getElementById('filter-year');
+            const currentYear = now.getFullYear();
+            
+            if(yearSelect.options.length === 0) {
+                let options = '';
+                for(let i = currentYear - 2; i <= currentYear + 1; i++) {
+                    options += `<option value="${i}" ${i === currentYear ? 'selected' : ''}>${i}</option>`;
+                }
+                options += `<option value="all">Todos</option>`;
+                yearSelect.innerHTML = options;
+            }
+        };
 
         // Establecer Fecha/Hora por defecto al cargar
         const setDateTimeDefaults = () => {
             const now = new Date();
-            // Formato YYYY-MM-DD para input date
             document.getElementById('date-input').value = now.toISOString().split('T')[0];
-            // Formato HH:MM para input time
             document.getElementById('time-input').value = now.toTimeString().substring(0,5);
         };
-        setDateTimeDefaults();
-
+        
         // --- Utilidades ---
         const formatMoney = (amount) => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(amount);
         const saveToLocal = () => {
@@ -238,17 +338,35 @@
             localStorage.setItem('gd_transactions', JSON.stringify(transactions));
         };
 
+        // --- CONEXIÓN A GOOGLE SHEETS ---
+        const saveToGoogleSheets = (data) => {
+            if (!GOOGLE_SHEET_URL) return;
+            const payload = {
+                id: data.id,
+                fullDate: data.fullDate,
+                description: data.description,
+                categoryId: categories.find(c => c.id === data.categoryId)?.name || data.categoryId,
+                amount: data.amount,
+                method: data.method,
+                detail: data.bank || data.digitalApp || ''
+            };
+            fetch(GOOGLE_SHEET_URL, {
+                method: 'POST', mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(console.error);
+        };
+
         // --- Lógica Visual (UI) ---
 
-        // 1. Selector de Categorías (CORREGIDO: Color de iconos)
+        // 1. Selector de Categorías
         const renderCategorySelectors = () => {
             const container = document.getElementById('category-selector');
             container.innerHTML = categories.map(cat => `
                 <div onclick="selectCategory('${cat.id}')" 
-                     class="cat-btn cursor-pointer border rounded-lg p-2 text-center text-xs font-semibold hover:bg-gray-50 transition border-gray-200 text-gray-500"
+                     class="cat-btn cursor-pointer border rounded-xl p-3 text-center text-xs font-semibold hover:bg-gray-50 transition-all duration-200 border-gray-100 shadow-sm text-gray-500"
                      id="btn-${cat.id}" data-color="${cat.color}">
-                    <!-- Quitamos el style inline del icono y lo manejamos via JS para el contraste -->
-                    <i class="fas ${cat.icon} cat-icon mb-1 block text-lg" style="color: ${cat.color}"></i>
+                    <i class="fas ${cat.icon} cat-icon mb-2 block text-xl transition-colors" style="color: ${cat.color}"></i>
                     ${cat.name}
                 </div>
             `).join('');
@@ -256,64 +374,58 @@
 
         window.selectCategory = (id) => {
             document.getElementById('selected-category').value = id;
-            
-            // Resetear todos los botones
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 const originalColor = btn.getAttribute('data-color');
-                btn.className = "cat-btn cursor-pointer border rounded-lg p-2 text-center text-xs font-semibold hover:bg-gray-50 transition border-gray-200 text-gray-500";
+                btn.className = "cat-btn cursor-pointer border rounded-xl p-3 text-center text-xs font-semibold hover:bg-gray-50 transition-all duration-200 border-gray-100 shadow-sm text-gray-500";
                 btn.style.backgroundColor = "white";
-                btn.style.borderColor = "#E5E7EB";
-                btn.style.color = "#6B7280"; // Texto gris
-                
-                // Restaurar color original del icono
+                btn.style.borderColor = "#f3f4f6";
+                btn.style.color = "#6B7280";
+                btn.style.transform = "scale(1)";
                 const icon = btn.querySelector('.cat-icon');
                 if(icon) icon.style.color = originalColor;
             });
 
-            // Activar botón seleccionado
-            const activeBtn = document.getElementById(`btn-${id}`);
-            const activeColor = activeBtn.getAttribute('data-color');
-            
-            activeBtn.style.backgroundColor = activeColor;
-            activeBtn.style.borderColor = activeColor;
-            activeBtn.style.color = "white"; // Texto blanco
-            
-            // Forzar icono blanco para contraste
-            const activeIcon = activeBtn.querySelector('.cat-icon');
-            if(activeIcon) activeIcon.style.color = "white";
+            if (id) {
+                const activeBtn = document.getElementById(`btn-${id}`);
+                const activeColor = activeBtn.getAttribute('data-color');
+                activeBtn.style.backgroundColor = activeColor;
+                activeBtn.style.borderColor = activeColor;
+                activeBtn.style.color = "white";
+                activeBtn.style.transform = "scale(1.02)";
+                activeBtn.style.boxShadow = `0 4px 10px -2px ${activeColor}80`;
+                
+                const activeIcon = activeBtn.querySelector('.cat-icon');
+                if(activeIcon) activeIcon.style.color = "white";
+            }
         };
 
-        // 2. Lógica Opciones de Pago (Bancos y Digital)
+        // 2. Opciones de Pago
         window.togglePaymentOptions = () => {
             const creditRadio = document.getElementById('pay-credit');
-            const debitRadio = document.getElementById('pay-debit'); // Digital
+            const debitRadio = document.getElementById('pay-debit');
             
             const bankContainer = document.getElementById('bank-container');
             const digitalContainer = document.getElementById('digital-container');
             
-            // Lógica Banco
-            if (creditRadio.checked) {
-                bankContainer.classList.remove('hidden');
-            } else {
-                bankContainer.classList.add('hidden');
-                document.getElementById('bank-select').value = ""; 
-            }
-
-            // Lógica Digital (Yape/Plin)
-            if (debitRadio.checked) {
-                digitalContainer.classList.remove('hidden');
-            } else {
-                digitalContainer.classList.add('hidden');
-                document.getElementById('digital-select').value = "";
-            }
+            bankContainer.classList.add('hidden');
+            digitalContainer.classList.add('hidden');
+            
+            if (creditRadio.checked) bankContainer.classList.remove('hidden');
+            if (debitRadio.checked) digitalContainer.classList.remove('hidden');
         };
 
         // 3. Renderizar Presupuestos
         const renderBudgets = () => {
             const list = document.getElementById('budget-list');
+            const filterMonth = document.getElementById('filter-month').value;
+            const filterYear = document.getElementById('filter-year').value;
+
+            // Filtramos transacciones para el cálculo de barras
+            const filteredTx = filterTransactions(transactions, filterMonth, filterYear);
+            
             const spendingMap = {};
             categories.forEach(c => spendingMap[c.id] = 0);
-            transactions.forEach(t => {
+            filteredTx.forEach(t => {
                 if(spendingMap[t.categoryId] !== undefined) spendingMap[t.categoryId] += t.amount;
             });
 
@@ -321,63 +433,93 @@
                 const spent = spendingMap[cat.id];
                 const remaining = cat.budget - spent;
                 const percent = Math.min((spent / cat.budget) * 100, 100);
+                
                 return `
-                <div class="mb-3">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="font-semibold text-gray-700">${cat.name}</span>
-                        <span class="text-gray-500">${formatMoney(spent)} / ${formatMoney(cat.budget)}</span>
+                <div class="mb-2">
+                    <div class="flex justify-between text-xs mb-1.5 items-end">
+                        <span class="font-bold text-gray-700 flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full" style="background-color: ${cat.color}"></div>
+                            ${cat.name}
+                        </span>
+                        <span class="text-gray-500 font-medium">${formatMoney(spent)} <span class="text-gray-300">/</span> ${formatMoney(cat.budget)}</span>
                     </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                        <div class="progress-bar-fill h-2.5 rounded-full" style="width: ${percent}%; background-color: ${cat.color}"></div>
+                    <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
+                        <div class="progress-bar-fill h-3 rounded-full" style="width: ${percent}%; background-color: ${cat.color}"></div>
                     </div>
-                    <div class="text-right text-[10px] mt-1 ${remaining < 0 ? 'text-red-500 font-bold' : 'text-gray-400'}">
-                        ${remaining < 0 ? `Excedido por ${formatMoney(Math.abs(remaining))}` : `Quedan: ${formatMoney(remaining)}`}
+                    <div class="text-right text-[10px] mt-1 font-medium ${remaining < 0 ? 'text-red-500' : 'text-gray-400'}">
+                        ${remaining < 0 ? `Excedido: ${formatMoney(Math.abs(remaining))}` : `Disponible: ${formatMoney(remaining)}`}
                     </div>
                 </div>
                 `;
             }).join('');
         };
 
-        // 4. Renderizar Historial (Con Fecha y Hora)
+        // --- Función de Filtrado ---
+        const filterTransactions = (txs, month, year) => {
+            return txs.filter(t => {
+                const date = new Date(t.fullDate);
+                const tYear = date.getFullYear();
+                const tMonth = date.getMonth(); // 0-11
+
+                const yearMatch = (year === 'all') || (tYear.toString() === year);
+                const monthMatch = (month === 'all') || (tMonth.toString() === month);
+
+                return yearMatch && monthMatch;
+            });
+        };
+
+        // 4. Renderizar Historial (Filtrado)
         const renderHistory = () => {
             const list = document.getElementById('transaction-list');
-            if (transactions.length === 0) {
-                list.innerHTML = '<li class="text-center text-gray-400 py-4 text-sm">No hay gastos registrados aún.</li>';
+            const filterMonth = document.getElementById('filter-month').value;
+            const filterYear = document.getElementById('filter-year').value;
+
+            const filteredTxs = filterTransactions(transactions, filterMonth, filterYear);
+
+            if (filteredTxs.length === 0) {
+                list.innerHTML = '<li class="text-center text-gray-400 py-6 text-sm italic">No hay movimientos en este periodo.</li>';
                 return;
             }
 
             // Ordenar por fecha y hora (más reciente primero)
-            const sorted = [...transactions].sort((a, b) => new Date(b.fullDate) - new Date(a.fullDate));
+            const sorted = [...filteredTxs].sort((a, b) => new Date(b.fullDate) - new Date(a.fullDate));
 
             list.innerHTML = sorted.map(t => {
                 const cat = categories.find(c => c.id === t.categoryId) || { color: '#ccc', name: '?' };
                 
-                // Formatear detalles de pago
                 let methodDisplay = t.method;
-                if (t.method === 'Tarjeta de Crédito' && t.bank) methodDisplay = `${t.bank} (Crédito)`;
-                if (t.method === 'Digital' && t.digitalApp) methodDisplay = `${t.digitalApp} (Digital)`;
+                if (t.method === 'Tarjeta de Crédito' && t.bank) methodDisplay = `${t.bank} • Crédito`;
+                if (t.method === 'Digital' && t.digitalApp) methodDisplay = `${t.digitalApp} • Digital`;
 
-                // Formatear fecha para mostrar
                 const dateObj = new Date(t.fullDate);
                 const dateStr = dateObj.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' });
                 const timeStr = dateObj.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
                 return `
-                <li class="py-3 flex justify-between items-center group">
+                <li class="py-4 flex justify-between items-center group border-b border-dashed border-gray-100 last:border-0 hover:bg-gray-50 transition px-2 rounded-lg">
                     <div class="flex items-center">
-                        <div class="w-2 h-10 rounded-full mr-3" style="background-color: ${cat.color}"></div>
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-sm mr-3" style="background-color: ${cat.color}">
+                            <i class="fas ${cat.icon} text-sm"></i>
+                        </div>
                         <div>
-                            <p class="font-bold text-gray-800">${t.description}</p>
+                            <p class="font-bold text-gray-800 text-sm">${t.description}</p>
                             <div class="flex flex-col">
-                                <span class="text-xs text-gray-500">${cat.name} • ${methodDisplay}</span>
-                                <span class="text-[10px] text-gray-400 mt-0.5"><i class="far fa-clock"></i> ${dateStr} ${timeStr}</span>
+                                <span class="text-[10px] text-gray-400 font-medium uppercase tracking-wide mt-0.5">${methodDisplay}</span>
+                                <span class="text-[10px] text-gray-400 mt-0.5 flex items-center gap-1">
+                                    <i class="far fa-clock text-[9px]"></i> ${dateStr} ${timeStr}
+                                </span>
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-center">
-                         <span class="font-bold text-gray-700 mr-3">${formatMoney(t.amount)}</span>
-                         <button onclick="deleteTransaction(${t.id})" class="text-red-300 hover:text-red-500 text-xs p-2">
-                            <i class="fas fa-trash"></i>
+                    <div class="flex items-center gap-2">
+                         <span class="font-bold text-gray-700 text-sm">${formatMoney(t.amount)}</span>
+                         <!-- Botón Editar -->
+                         <button onclick="editTransaction(${t.id})" class="text-indigo-300 hover:text-indigo-600 text-sm p-2 transition-colors bg-indigo-50 rounded-lg">
+                            <i class="fas fa-pencil-alt"></i>
+                         </button>
+                         <!-- Botón Eliminar -->
+                         <button onclick="deleteTransaction(${t.id})" class="text-red-300 hover:text-red-600 text-sm p-2 transition-colors bg-red-50 rounded-lg">
+                            <i class="fas fa-trash-alt"></i>
                          </button>
                     </div>
                 </li>
@@ -385,8 +527,87 @@
             }).join('');
         };
 
+        // --- FUNCIONES DE EDICIÓN ---
+
+        window.editTransaction = (id) => {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            // 1. Cargar datos en el formulario
+            document.getElementById('amount').value = tx.amount;
+            document.getElementById('description').value = tx.description;
+            
+            // Fecha y Hora
+            const dateObj = new Date(tx.fullDate);
+            document.getElementById('date-input').value = dateObj.toISOString().split('T')[0];
+            document.getElementById('time-input').value = dateObj.toTimeString().substring(0,5);
+
+            // Categoría
+            selectCategory(tx.categoryId);
+
+            // Método de Pago
+            if (tx.method === 'Efectivo') document.getElementById('pay-cash').checked = true;
+            else if (tx.method === 'Digital') document.getElementById('pay-debit').checked = true;
+            else if (tx.method === 'Tarjeta de Crédito') document.getElementById('pay-credit').checked = true;
+            
+            togglePaymentOptions(); // Actualizar visibilidad
+
+            // Detalles Bancos/Apps
+            if (tx.bank) document.getElementById('bank-select').value = tx.bank;
+            if (tx.digitalApp) document.getElementById('digital-select').value = tx.digitalApp;
+
+            // 2. Cambiar estado UI a "Edición"
+            editingTransactionId = id;
+            
+            const submitBtn = document.getElementById('submit-btn');
+            const submitText = document.getElementById('submit-text');
+            const submitIcon = document.getElementById('submit-icon');
+            const formTitle = document.getElementById('form-title');
+            const cancelBtn = document.getElementById('cancel-edit-btn');
+
+            submitBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            submitBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+            submitText.textContent = "Actualizar Gasto";
+            submitIcon.className = "fas fa-save";
+            formTitle.textContent = "Editando Gasto";
+            formTitle.classList.add('text-orange-600');
+            cancelBtn.classList.remove('hidden');
+
+            // 3. Scroll hacia el formulario
+            document.querySelector('header').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.cancelEdit = () => {
+            editingTransactionId = null;
+            
+            // Resetear UI
+            document.getElementById('expense-form').reset();
+            setDateTimeDefaults();
+            selectCategory(null);
+            document.getElementById('selected-category').value = "";
+            togglePaymentOptions();
+
+            const submitBtn = document.getElementById('submit-btn');
+            const submitText = document.getElementById('submit-text');
+            const submitIcon = document.getElementById('submit-icon');
+            const formTitle = document.getElementById('form-title');
+            const cancelBtn = document.getElementById('cancel-edit-btn');
+
+            submitBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            submitBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+            submitText.textContent = "Agregar Gasto";
+            submitIcon.className = "fas fa-plus-circle";
+            formTitle.textContent = "Nuevo Gasto";
+            formTitle.classList.remove('text-orange-600');
+            cancelBtn.classList.add('hidden');
+        };
+
+        // --- Eliminar ---
         window.deleteTransaction = (id) => {
             if(confirm('¿Borrar este gasto?')) {
+                // Si estamos editando este mismo gasto, cancelar edición primero
+                if (editingTransactionId === id) cancelEdit();
+                
                 transactions = transactions.filter(t => t.id !== id);
                 saveToLocal();
                 updateUI();
@@ -396,11 +617,17 @@
         // 5. Gráfica y Cabecera
         const updateChart = () => {
             const ctx = document.getElementById('expenseChart').getContext('2d');
+            
+            const filterMonth = document.getElementById('filter-month').value;
+            const filterYear = document.getElementById('filter-year').value;
+            const filteredTxs = filterTransactions(transactions, filterMonth, filterYear);
+
             const dataMap = categories.map(cat => {
-                return transactions.filter(t => t.categoryId === cat.id).reduce((sum, t) => sum + t.amount, 0);
+                return filteredTxs.filter(t => t.categoryId === cat.id).reduce((sum, t) => sum + t.amount, 0);
             });
 
             const totalSpent = dataMap.reduce((a, b) => a + b, 0);
+            
             const totalBudget = categories.reduce((sum, cat) => sum + cat.budget, 0);
             const remainingBalance = totalBudget - totalSpent;
 
@@ -408,23 +635,23 @@
             headerEl.textContent = formatMoney(remainingBalance);
             
             if (remainingBalance < 0) {
-                headerEl.classList.add('text-red-200'); headerEl.classList.remove('text-white');
+                headerEl.classList.add('text-red-200'); headerEl.classList.remove('text-indigo-100');
             } else {
-                headerEl.classList.remove('text-red-200'); headerEl.classList.add('text-white');
+                headerEl.classList.remove('text-red-200'); headerEl.classList.add('text-indigo-100');
             }
 
             if (myChart) myChart.destroy();
 
             const chartData = (totalSpent === 0) 
-                ? { labels: ['Sin gastos'], datasets: [{ data: [1], backgroundColor: ['#E5E7EB'], borderWidth: 0 }] }
+                ? { labels: ['Sin gastos'], datasets: [{ data: [1], backgroundColor: ['#f1f5f9'], borderWidth: 0 }] }
                 : { 
                     labels: categories.map(c => c.name),
                     datasets: [{
                         data: dataMap,
                         backgroundColor: categories.map(c => c.color),
-                        borderWidth: 2,
-                        borderColor: '#ffffff',
-                        hoverOffset: 4
+                        borderWidth: 0,
+                        hoverOffset: 10,
+                        borderRadius: 5
                     }]
                   };
 
@@ -434,65 +661,88 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '65%',
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } } }, tooltip: { enabled: totalSpent > 0 } }
+                    cutout: '75%',
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { size: 11, family: 'Inter' }, color: '#64748b' } 
+                        }, 
+                        tooltip: { enabled: totalSpent > 0, backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8 } 
+                    },
+                    animation: { animateScale: true, animateRotate: true }
                 }
             });
         };
 
         const updateUI = () => { renderBudgets(); renderHistory(); updateChart(); };
 
-        // --- Agregar Gasto ---
+        // --- Agregar / Actualizar Gasto ---
         document.getElementById('expense-form').addEventListener('submit', (e) => {
             e.preventDefault();
 
             const amount = parseFloat(document.getElementById('amount').value);
             const desc = document.getElementById('description').value;
             const catId = document.getElementById('selected-category').value;
-            
-            // Fecha y Hora
-            const dateVal = document.getElementById('date-input').value; // YYYY-MM-DD
-            const timeVal = document.getElementById('time-input').value; // HH:MM
-            const fullDateIso = `${dateVal}T${timeVal}:00`; // Construir ISO simple
+            const dateVal = document.getElementById('date-input').value; 
+            const timeVal = document.getElementById('time-input').value; 
+            const fullDateIso = `${dateVal}T${timeVal}:00`; 
 
-            // Método
             const paymentRadios = document.getElementsByName('payment');
             let method = '';
             for(const r of paymentRadios) { if(r.checked) method = r.value; }
 
-            // Sub-opciones
             const bankSelect = document.getElementById('bank-select');
             const digitalSelect = document.getElementById('digital-select');
-            
             const bank = (method === 'Tarjeta de Crédito') ? bankSelect.value : null;
             const digitalApp = (method === 'Digital') ? digitalSelect.value : null;
 
-            // Validaciones
             if (!catId) { alert("Por favor selecciona una categoría"); return; }
             if (method === 'Tarjeta de Crédito' && !bank) { alert("Por favor selecciona el banco"); return; }
-            if (method === 'Digital' && !digitalApp) { alert("Por favor selecciona la billetera (Yape/Plin)"); return; }
+            if (method === 'Digital' && !digitalApp) { alert("Por favor selecciona la billetera"); return; }
 
-            const newTx = {
-                id: Date.now(),
+            // Objeto de transacción (común)
+            const txData = {
                 amount: amount,
                 description: desc,
                 categoryId: catId,
                 method: method,
                 bank: bank,
                 digitalApp: digitalApp,
-                fullDate: fullDateIso // Guardamos la fecha elegida
+                fullDate: fullDateIso
             };
 
-            transactions.push(newTx);
-            saveToLocal();
-            
-            // Reset
-            document.getElementById('expense-form').reset();
-            setDateTimeDefaults(); // Restaurar fecha/hora actual
-            selectCategory(null);
-            document.getElementById('selected-category').value = "";
-            togglePaymentOptions();
+            if (editingTransactionId) {
+                // MODO EDICIÓN: Actualizar existente
+                const index = transactions.findIndex(t => t.id === editingTransactionId);
+                if (index !== -1) {
+                    transactions[index] = { ...transactions[index], ...txData }; // Mantener ID original
+                    
+                    // Nota: No enviamos update a Google Sheets en este script simple (solo append), 
+                    // pero actualizamos localmente.
+                }
+                cancelEdit(); // Salir del modo edición
+            } else {
+                // MODO CREACIÓN: Nuevo
+                const newTx = {
+                    id: Date.now(),
+                    ...txData
+                };
+                transactions.push(newTx);
+                saveToGoogleSheets(newTx); // Solo enviar a Sheets si es nuevo
+                
+                // Reset normal
+                document.getElementById('expense-form').reset();
+                setDateTimeDefaults();
+                selectCategory(null);
+                document.getElementById('selected-category').value = "";
+                togglePaymentOptions();
+            }
 
+            saveToLocal();
+            // Si estamos editando, tal vez queramos mantener el filtro donde está,
+            // si es nuevo, reseteamos a "mes actual" para verlo.
+            if (!editingTransactionId) initFilters();
+            
             updateUI();
         });
 
@@ -500,25 +750,28 @@
         window.exportToPDF = () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            doc.text("Reporte de Gastos Diarios", 14, 20);
+            doc.setFont("helvetica", "bold");
+            doc.text("Reporte de Gastos - Canaliza tus Chacras", 14, 20);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(10);
+            doc.text(`Fecha de reporte: ${new Date().toLocaleDateString()}`, 14, 26);
             
             const tableData = transactions.map(t => {
                 const cat = categories.find(c => c.id === t.categoryId);
                 const dateObj = new Date(t.fullDate);
                 const dateStr = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
                 let detalle = t.method;
                 if(t.bank) detalle += ` (${t.bank})`;
                 if(t.digitalApp) detalle += ` (${t.digitalApp})`;
-
                 return [dateStr, t.description, cat.name, detalle, `S/ ${t.amount.toFixed(2)}`];
             });
 
             doc.autoTable({
                 head: [['Fecha', 'Descripción', 'Categoría', 'Método', 'Monto']],
                 body: tableData,
-                startY: 30,
+                startY: 35,
+                theme: 'grid',
+                headStyles: { fillColor: [79, 70, 229] } // Indigo header
             });
 
             doc.save(`Gastos_${new Date().toISOString().slice(0,10)}.pdf`);
@@ -528,7 +781,6 @@
             const dataForExcel = transactions.map(t => {
                  const cat = categories.find(c => c.id === t.categoryId);
                  const dateObj = new Date(t.fullDate);
-                 
                  return {
                      "Fecha": dateObj.toLocaleDateString(),
                      "Hora": dateObj.toLocaleTimeString(),
@@ -539,7 +791,6 @@
                      "Monto": t.amount
                  };
             });
-
             const ws = XLSX.utils.json_to_sheet(dataForExcel);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Gastos");
@@ -551,17 +802,24 @@
             const modal = document.getElementById('budget-modal');
             const container = document.getElementById('modal-inputs');
             container.innerHTML = categories.map(cat => `
-                <div class="flex items-center justify-between">
-                    <label class="text-sm font-medium text-gray-700 w-1/3">${cat.name}</label>
-                    <div class="flex items-center w-2/3">
+                <div class="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                    <label class="text-sm font-semibold text-gray-700 w-1/3 flex items-center gap-2">
+                        <i class="fas ${cat.icon} text-${cat.color.replace('#','')} text-xs" style="color:${cat.color}"></i>
+                        ${cat.name}
+                    </label>
+                    <div class="flex items-center w-2/3 bg-white border rounded-lg px-2 shadow-sm focus-within:ring-2 ring-indigo-100">
                         <span class="text-gray-400 mr-2 text-sm">S/</span>
-                        <input type="number" id="input-budget-${cat.id}" value="${cat.budget}" class="w-full border rounded px-2 py-1 text-sm">
+                        <input type="number" id="input-budget-${cat.id}" value="${cat.budget}" class="w-full border-none focus:ring-0 py-2 text-sm font-bold text-gray-700 outline-none">
                     </div>
                 </div>
             `).join('');
             modal.classList.remove('hidden');
+            setTimeout(() => { modal.querySelector('div').classList.remove('scale-95', 'opacity-0'); }, 10);
         };
-        window.closeModal = () => document.getElementById('budget-modal').classList.add('hidden');
+        window.closeModal = () => {
+            const modal = document.getElementById('budget-modal');
+            modal.classList.add('hidden');
+        };
         window.saveBudgets = () => {
             categories.forEach(cat => {
                 const input = document.getElementById(`input-budget-${cat.id}`);
@@ -571,6 +829,8 @@
         };
 
         // --- Inicio ---
+        initFilters();
+        setDateTimeDefaults();
         renderCategorySelectors();
         updateUI();
 
